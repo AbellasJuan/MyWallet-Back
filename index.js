@@ -16,13 +16,14 @@ mongoClient.connect(() => {
 
 app.post('/auth/sign-up', async (req, res) => {
     
-    try {
+    const {nome, email, senha} = req.body;
     
+    try {
         await db.collection('users').insertOne(
             { 
-                "nome": "FULANO",
-                "email": "blablabla@email.com", 
-                "senha": "senha123456"
+                "nome": nome,
+                "email": email, 
+                "senha": senha
             }
         );
             
