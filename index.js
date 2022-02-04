@@ -34,7 +34,21 @@ app.post('/auth/sign-up', async (req, res) => {
     }
 });
 
-app.get('/auth/sign-up', async (req, res) => {
+app.post('/auth/sign-in', async (req, res) => {
+    
+    const { email, senha } = req.body;
+    
+    try {
+        const participantRegistered = await db.collection('users').findOne({ email: email });
+            
+        res.status(200).send(participantRegistered);
+    } catch (error) {
+        console.error(error);
+        res.sendStatus(500);
+    }
+});
+
+app.get('/users', async (req, res) => {
    
     try {
       
@@ -46,5 +60,44 @@ app.get('/auth/sign-up', async (req, res) => {
         res.sendStatus(500);
     }
 });
+
+
+app.post('/new-entry', async (req, res)=>{
+    const { valor , descricao } = req.body;
+
+    try {
+
+        const newEntry = await db.collection('registers').insertOne(
+            {
+                "valor": valor,
+                "descricao": descricao
+            }
+        );
+        
+        const deixaeuver = await db.collection('registers').find({}).toArray();
+
+        res.sendStatus(201);
+
+    } catch (error) {
+        console.error(error);
+        res.sendStatus(500);
+    }
+})
+
+
+
+app.get('/userRegisters', async (req, res)=>{
+
+    try {
+
+        const registers = await db.collection('registers').find({}).toArray();
+
+        res.status(200).send(registers);
+        
+    } catch (error) {
+        console.log(error);
+        res.sendStatus(500)    
+    }
+})
 
 app.listen(5000);
