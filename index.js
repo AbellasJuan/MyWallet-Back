@@ -2,6 +2,9 @@ import express, { json } from 'express';
 import cors from 'cors';
 import { MongoClient } from "mongodb";
 import dotenv from 'dotenv';
+import dayjs from 'dayjs';
+// import joi from 'joi';
+// import { stripHtml } from 'string-strip-html';
 dotenv.config();
 
 const app = express();
@@ -61,17 +64,19 @@ app.get('/users', async (req, res) => {
     }
 });
 
-
 app.post('/new-entry', async (req, res)=>{
     const { valor , descricao } = req.body;
 
     try {
 
-        const newEntry = await db.collection('registers').insertOne(
+        const time = dayjs().locale('pt-br').format('DD/MM');
+
+        await db.collection('registers').insertOne(
             {
                 "valor": parseInt(+valor),
                 "descricao": descricao,
-                "isCredit": true
+                "isCredit": true,
+                "data": time
             }
         );
         
@@ -88,11 +93,14 @@ app.post('/new-exit', async (req, res)=>{
 
     try {
 
-        const newExit = await db.collection('registers').insertOne(
+        const time = dayjs().locale('pt-br').format('DD/MM');
+
+        await db.collection('registers').insertOne(
             {
                 "valor": parseInt(-valor),
                 "descricao": descricao,
-                "isCredit": false
+                "isCredit": false,
+                "data": time
             }
         );
         
