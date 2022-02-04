@@ -23,6 +23,11 @@ const userSchema = joi.object({
     password: joi.string().max(50).required()
 })
 
+const signInSchema = joi.object({
+    email: joi.string().required(),
+    password: joi.string().required()
+  })
+
 app.post('/auth/sign-up', async (req, res) => {
     const {name, email, password} = req.body;
     
@@ -51,26 +56,28 @@ app.post('/auth/sign-up', async (req, res) => {
 });
 
 app.post('/auth/sign-in', async (req, res) => {
-    
-    const { email, senha } = req.body;
-    
-    try {
-        const participantRegistered = await db.collection('users').findOne({ email: email });
-            
-        res.status(200).send(participantRegistered);
-    } catch (error) {
-        console.error(error);
-        res.sendStatus(500);
-    }
-});
+    const { email, password } = req.body;
 
-app.get('/users', async (req, res) => {
-   
+    const validation = signInSchema.validate(req.body, { abortEarly: false });
+
+    if (validation.error) {
+        return res.status(422).send(validation.error.details.map(error => error.message))       ;
+    }
+    
     try {
-      
-        const users = await db.collection('users').find({}).toArray();
-              
-         res.status(200).send(users);
+        const user = await db.collection('users').findOne({ email: email });
+            
+        if (!user) {
+            return res.sendStatus(401);
+        }
+        
+        if(bcrypt.compareSync(password, user.password)) {
+          const token = uuid();
+          await db.collection("session").insertOne({ token, userId: user._id })
+          return res.send({ token });
+        }  
+
+        res.sendStatus(401);
     } catch (error) {
         console.error(error);
         res.sendStatus(500);
