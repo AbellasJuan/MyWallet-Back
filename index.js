@@ -3,8 +3,8 @@ import cors from 'cors';
 import { MongoClient } from "mongodb";
 import dotenv from 'dotenv';
 import dayjs from 'dayjs';
-// import joi from 'joi';
-// import { stripHtml } from 'string-strip-html';
+import joi from 'joi';
+import { stripHtml } from 'string-strip-html';
 dotenv.config();
 
 const app = express();
@@ -17,16 +17,29 @@ mongoClient.connect(() => {
     db = mongoClient.db("MyWallet");
 });
 
+const userSchema = joi.object({
+    name: joi.string().max(30).required(),
+    email: joi.string().max(100).required(),
+    password: joi.string().max(50).required()
+})
+
 app.post('/auth/sign-up', async (req, res) => {
+    const {name, email, password} = req.body;
     
-    const {nome, email, senha} = req.body;
-    
+    const validation = userSchema.validate(req.body, { abortEarly: false });
+
+    if (validation.error) {
+        return res.status(422).send(validation.error.details.map(error => error.message))       ;
+    }
+
+    const hashSenha = bcrypt.hashSync(password, 10);
+        
     try {
         await db.collection('users').insertOne(
             { 
-                "nome": nome,
-                "email": email, 
-                "senha": senha
+                "name": stripHtml(name).result.trim(),
+                "email": stripHtml(email).result.trim(),
+                "password": hashSenha
             }
         );
             
@@ -73,7 +86,7 @@ app.post('/new-entry', async (req, res)=>{
 
         await db.collection('registers').insertOne(
             {
-                "valor": parseInt(+valor),
+                "valor": parseFloat(+valor),
                 "descricao": descricao,
                 "isCredit": true,
                 "data": time
@@ -97,7 +110,7 @@ app.post('/new-exit', async (req, res)=>{
 
         await db.collection('registers').insertOne(
             {
-                "valor": parseInt(-valor),
+                "valor": parseFloat(-valor),
                 "descricao": descricao,
                 "isCredit": false,
                 "data": time
