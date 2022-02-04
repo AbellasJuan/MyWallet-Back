@@ -69,13 +69,12 @@ app.post('/new-entry', async (req, res)=>{
 
         const newEntry = await db.collection('registers').insertOne(
             {
-                "valor": valor,
-                "descricao": descricao
+                "valor": parseInt(+valor),
+                "descricao": descricao,
+                "isCredit": true
             }
         );
         
-        const deixaeuver = await db.collection('registers').find({}).toArray();
-
         res.sendStatus(201);
 
     } catch (error) {
@@ -84,7 +83,26 @@ app.post('/new-entry', async (req, res)=>{
     }
 })
 
+app.post('/new-exit', async (req, res)=>{
+    const { valor , descricao } = req.body;
 
+    try {
+
+        const newExit = await db.collection('registers').insertOne(
+            {
+                "valor": parseInt(-valor),
+                "descricao": descricao,
+                "isCredit": false
+            }
+        );
+        
+        res.sendStatus(201);
+
+    } catch (error) {
+        console.error(error);
+        res.sendStatus(500);
+    }
+})
 
 app.get('/userRegisters', async (req, res)=>{
 
