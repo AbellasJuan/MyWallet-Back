@@ -102,9 +102,9 @@ app.get('/userRegisters', async (req, res)=>{
             return res.sendStatus(401);
         }
         
-        const registers = await db.collection('registers').findOne({ _id: new ObjectId(session.userId) });
+        const registers = await db.collection('registers').find({ registerUserId: new ObjectId(session.userId) }).toArray();
 
-        res.status(200).send(session);
+        res.status(200).send(registers);
         
     } catch (error) {
         console.log(error);
@@ -113,10 +113,17 @@ app.get('/userRegisters', async (req, res)=>{
 })
 
 app.post('/new-entry', async (req, res)=>{
-    
+    const authorization = req.headers.authorization;
+    const token = authorization?.replace('Bearer ', '');
+
     const { value , description } = req.body;
 
     try {
+
+        const session = await db.collection("session").findOne({ token });
+        if (!session) {
+            return res.sendStatus(401);
+        }
 
         const time = dayjs().locale('pt-br').format('DD/MM');
 
@@ -125,7 +132,8 @@ app.post('/new-entry', async (req, res)=>{
                 "value": parseFloat(+value),
                 "description": description,
                 "isCredit": true,
-                "data": time
+                "data": time,
+                "registerUserId": session.userId  
             }
         );
         
@@ -138,18 +146,27 @@ app.post('/new-entry', async (req, res)=>{
 })
 
 app.post('/new-exit', async (req, res)=>{
+    const authorization = req.headers.authorization;
+    const token = authorization?.replace('Bearer ', '');
+
     const { value , description } = req.body;
 
     try {
+
+        const session = await db.collection("session").findOne({ token });
+        if (!session) {
+            return res.sendStatus(401);
+        }
 
         const time = dayjs().locale('pt-br').format('DD/MM');
 
         await db.collection('registers').insertOne(
             {
-                "value": parseFloat(-value),
+                "value": parseFloat(+value),
                 "description": description,
-                "isCredit": false,
-                "data": time
+                "isCredit": true,
+                "data": time,
+                "registerUserId": session.userId  
             }
         );
         
