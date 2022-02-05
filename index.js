@@ -49,11 +49,9 @@ app.post('/auth/sign-in', async (req, res) => {
           
           if(bcrypt.compareSync(password, user.password)) {
             const token = uuid();
-            await db.collection("session").insertOne({ token, userId: user._id })
-
-            console.log('linha53', token)
-            
-            return res.send({ token });
+            await db.collection("session").insertOne({ token, userId: user._id, userName: user.name });
+            const teste = await db.collection('session').findOne({ userName: user.name });
+            return res.status(200).send(teste);
           }  
   
   
@@ -132,7 +130,7 @@ app.post('/new-entry', async (req, res)=>{
                 "value": parseFloat(+value),
                 "description": description,
                 "isCredit": true,
-                "data": time,
+                "date": time,
                 "registerUserId": session.userId  
             }
         );
@@ -164,8 +162,8 @@ app.post('/new-exit', async (req, res)=>{
             {
                 "value": parseFloat(+value),
                 "description": description,
-                "isCredit": true,
-                "data": time,
+                "isCredit": false,
+                "date": time,
                 "registerUserId": session.userId  
             }
         );
@@ -200,5 +198,18 @@ app.get("/user", async (req, res) => {
       res.sendStatus(500);
     }
 })
+
+app.delete('/sign-out', async (req, res) => {
+    const authorization = req.headers.authorization;
+    const token = authorization?.replace('Bearer ', '');
+
+    try{
+        const session = await db.collection("session").deleteOne({token});
+        return res.sendStatus(200);
+    }catch (erro) {
+        console.log(erro);
+        res.sendStatus(500);
+    }
+});
 
 app.listen(5000);
