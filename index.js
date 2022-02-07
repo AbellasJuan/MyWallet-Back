@@ -47,10 +47,11 @@ app.post('/auth/sign-in', async (req, res) => {
       }
       
       try {
+        
           const user = await db.collection('users').findOne({ email: email });
          
           if (!user) {
-              return res.sendStatus(401);
+              return res.sendStatus(404);
           }
           
           if(bcrypt.compareSync(password, user.password)) {
@@ -74,6 +75,13 @@ app.post('/auth/sign-up', async (req, res) => {
 
     if (validation.error) {
         return res.status(422).send(validation.error.details.map(error => error.message));
+    }
+
+    const userEmail = await db.collection('users').findOne({ email });
+    const userName = await db.collection('users').findOne({ name });
+
+    if (userEmail || userName){
+        return res.sendStatus(400);
     }
 
     const hashSenha = bcrypt.hashSync(password, 10);
@@ -182,35 +190,12 @@ app.post('/new-exit', async (req, res)=>{
                 "registerUserId": session.userId  
             }
         );
-        
+
         res.sendStatus(201);
 
     } catch (error) {
         console.error(error);
         res.sendStatus(500);
-    }
-})
-
-app.get("/user", async (req, res) => {
-    const authorization = req.headers.authorization;
-    const token = authorization?.replace('Bearer ', '');
-  
-    try {
-      const session = await db.collection("session").findOne({ token });
-      
-      if (!session) {
-        return res.sendStatus(401);
-      }
-  
-      const user = await db.collection("users").findOne({ _id: session.userId });
-      if (!user) {
-        return res.sendStatus(401);
-      }
-  
-      res.send(user)
-    } catch (error) { 
-      console.log(error);
-      res.sendStatus(500);
     }
 })
 
