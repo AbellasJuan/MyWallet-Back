@@ -137,7 +137,7 @@ app.post('/new-entry', async (req, res)=>{
 
         await db.collection('registers').insertOne(
             {
-                "value": parseFloat(+value),
+                "value": Number(value),
                 "description": description,
                 "isCredit": true,
                 "date": time,
@@ -175,7 +175,7 @@ app.post('/new-exit', async (req, res)=>{
 
         await db.collection('registers').insertOne(
             {
-                "value": parseFloat(+value),
+                "value": -Math.abs(value),
                 "description": description,
                 "isCredit": false,
                 "date": time,
