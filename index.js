@@ -19,18 +19,24 @@ mongoClient.connect(() => {
     db = mongoClient.db("MyWallet");
 });
 
-const userSchema = joi.object({
-    name: joi.string().max(30).required(),
-    email: joi.string().max(100).required(),
-    password: joi.required()
-})
+const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
 const signInSchema = joi.object({
-    email: joi.string().required(),
-    password: joi.required()
-  })
-  
-  
+    email: joi.string().pattern(new RegExp(emailRegex)).required(),
+    password: joi.string().min(3).required()
+});
+
+const signUpSchema = joi.object({
+    name: joi.string().min(2).required(),
+    email: joi.string().pattern(new RegExp(emailRegex)).required(),
+    password: joi.string().min(3).required()
+});
+
+const registersSchema = joi.object({
+    description: joi.string().min(2).required(),
+    value: joi.number().min(1).required(),
+});
+
 app.post('/auth/sign-in', async (req, res) => {
       const { email, password } = req.body;
   
@@ -50,10 +56,9 @@ app.post('/auth/sign-in', async (req, res) => {
           if(bcrypt.compareSync(password, user.password)) {
             const token = uuid();
             await db.collection("session").insertOne({ token, userId: user._id, userName: user.name });
-            const teste = await db.collection('session').findOne({ userName: user.name });
-            return res.status(200).send(teste);
+            const loggedUser = await db.collection('session').findOne({ userName: user.name });
+            return res.status(200).send(loggedUser);
           }  
-  
   
           res.sendStatus(401);
       } catch (error) {
@@ -65,10 +70,10 @@ app.post('/auth/sign-in', async (req, res) => {
 app.post('/auth/sign-up', async (req, res) => {
     const {name, email, password} = req.body;
     
-    const validation = userSchema.validate(req.body, { abortEarly: false });
+    const validation = signUpSchema.validate(req.body, { abortEarly: false });
 
     if (validation.error) {
-        return res.status(422).send(validation.error.details.map(error => error.message))       ;
+        return res.status(422).send(validation.error.details.map(error => error.message));
     }
 
     const hashSenha = bcrypt.hashSync(password, 10);
@@ -83,9 +88,9 @@ app.post('/auth/sign-up', async (req, res) => {
         );
             
         res.sendStatus(201);
-    } catch (error) {
-        console.error(error);
-        res.sendStatus(500);
+    }catch (error) {
+       console.error(error);
+       res.sendStatus(500);
     }
 });
 
@@ -116,8 +121,13 @@ app.post('/new-entry', async (req, res)=>{
 
     const { value , description } = req.body;
 
-    try {
+    const validation = registersSchema.validate(req.body, { abortEarly: false });
 
+    if (validation.error) {
+        return res.status(422).send(validation.error.details.map(error => error.message));
+    }
+
+    try {
         const session = await db.collection("session").findOne({ token });
         if (!session) {
             return res.sendStatus(401);
@@ -148,9 +158,14 @@ app.post('/new-exit', async (req, res)=>{
     const token = authorization?.replace('Bearer ', '');
 
     const { value , description } = req.body;
+    
+    const validation = registersSchema.validate(req.body, { abortEarly: false });
+
+    if (validation.error) {
+        return res.status(422).send(validation.error.details.map(error => error.message));
+    }
 
     try {
-
         const session = await db.collection("session").findOne({ token });
         if (!session) {
             return res.sendStatus(401);
