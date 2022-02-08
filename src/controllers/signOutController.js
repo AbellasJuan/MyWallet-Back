@@ -1,9 +1,8 @@
 import db from '../database.js'
 
 export async function signOut(req, res){
-    const authorization = req.headers.authorization;
-    const token = authorization?.replace('Bearer ', '');
-
+    const token = res.locals.token;
+    
     try{
         await db.collection("session").deleteOne({token});
         return res.sendStatus(200);
